@@ -8,7 +8,8 @@ export type UpiAppId =
   | "jupiter"
   | "amazon"
   | "mobikwik"
-  | "airtel";
+  | "airtel"
+  | "other";
 
 export type UpiApp = {
   id: UpiAppId;
@@ -83,6 +84,13 @@ export const PICKER_APPS: UpiApp[] = [
 
 export const UPI_APPS: UpiApp[] = [CRED_APP, ...PICKER_APPS];
 
+export const OTHER_UPI_APP: UpiApp = {
+  id: "other",
+  label: "Other UPI App",
+  scheme: "upi://pay",
+  androidPackage: "",
+};
+
 export function upiQueryString(upiUri: string): string {
   const i = upiUri.indexOf("?");
   return i >= 0 ? upiUri.slice(i + 1) : "";
@@ -94,6 +102,9 @@ export function isAndroidUa(ua = ""): boolean {
 
 export function buildAppHref(upiUri: string, app: UpiApp, android = false): string {
   const q = upiQueryString(upiUri);
+  if (app.id === "other" || !app.androidPackage) {
+    return `upi://pay?${q}`;
+  }
   if (android) {
     const store = encodeURIComponent(
       `https://play.google.com/store/apps/details?id=${app.androidPackage}`,

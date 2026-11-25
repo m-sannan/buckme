@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Check, Copy, Download, Share2, X } from "lucide-react";
-import { qrDataUrl } from "@/lib/decode-qr";
+import { decodeQrFromBlob, qrDataUrl } from "@/lib/decode-qr";
 import { trackEvent } from "@/lib/stats";
 import { useBuckMeStore } from "@/lib/store";
-import { parseAmount, parseUpi } from "@/lib/upi";
+import { parseAmount, parseUpi, type UpiPayload } from "@/lib/upi";
 import { buildPaySearch } from "@/lib/upi-apps";
+import { MyQrSheetView } from "./MyQrSheetView";
+import { QrScannerSheet } from "./QrScannerSheet";
 
 export function MyQrSheet({ onClose }: { onClose: () => void }) {
   const { profile, setProfile } = useBuckMeStore();
@@ -14,7 +15,8 @@ export function MyQrSheet({ onClose }: { onClose: () => void }) {
   const [defaultNote, setDefaultNote] = useState(profile.defaultNote);
   const [qrUrl, setQrUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [vpaError, setVpaError] = useState<string | null>(null);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [scannerOpen, setScannerOpen] = useState(false);
 
   const validVpa = useMemo(() => {
     if (!vpa.trim()) return false;
@@ -48,177 +50,233 @@ export function MyQrSheet({ onClose }: { onClose: () => void }) {
     };
   }, [shareUrl]);
 
-  const handleSave = () => {
+  useEffect(() => {
     const check = parseUpi(vpa.trim());
-    if (!check.ok) {
-      setVpaError(check.error);
-      return;
-    }
-    setVpaError(null);
+    if (!check.ok) return;
     setProfile({
       vpa: check.payload.vpa,
       name: name.trim() || check.payload.name,
       defaultAmount: defaultAmount.trim(),
       defaultNote: defaultNote.trim(),
     });
-    void trackEvent("qr_created");
+  }, [vpa, name, defaultAmount, defaultNote, setProfile]);
+
+  const copyTextWithFallback = async (text: string): Promise<boolean> => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch {
+      /* fallback below */
+    }
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      if (ok) return true;
+    } catch {
+      /* fallback below */
+    }
+    return false;
   };
 
   const handleCopy = async () => {
-    if (!shareUrl) return;
-    await navigator.clipboard.writeText(shareUrl);
+    if (!shareUrl) {
+      setScanError("Scan, upload, or enter a valid UPI ID first.");
+      return;
+    }
+    setScanError(null);
+    const ok = await copyTextWithFallback(shareUrl);
+    if (!ok) {
+      window.prompt("Copy your BuckMe link:", shareUrl);
+    }
     setCopied(true);
     void trackEvent("qr_shared");
     setTimeout(() => setCopied(false), 1800);
   };
 
   const handleShare = async () => {
-    if (!shareUrl) return;
-    void trackEvent("qr_shared");
-    if (navigator.share) {
+    if (!shareUrl) {
+      setScanError("Scan, upload, or enter a valid UPI ID first.");
+      return;
+    }
+    setScanError(null);
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
       try {
         await navigator.share({
           title: `Buck ${name || "me"} on BuckMe`,
-          text: `Send me a Buck via UPI on BuckMe:`,
+          text: "Send me a Buck via UPI on BuckMe:",
           url: shareUrl,
         });
+        void trackEvent("qr_shared");
         return;
-      } catch {
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") {
+          return;
+        }
         /* fallback to copy */
       }
     }
     await handleCopy();
   };
 
-  const handleDownload = () => {
+  const applyParsedPayload = (payload: UpiPayload) => {
+    setVpa(payload.vpa);
+    setName(payload.name);
+    if (payload.amount) setDefaultAmount(String(payload.amount));
+    if (payload.note) setDefaultNote(payload.note);
+    setScanError(null);
+  };
+
+  const handleUploadQr = async (file: File) => {
+    try {
+      const raw = await decodeQrFromBlob(file);
+      if (!raw) {
+        setScanError("No QR found in that image. Try a tighter crop.");
+        return;
+      }
+      const res = parseUpi(raw);
+      if (!res.ok) {
+        setScanError(res.error);
+        return;
+      }
+      applyParsedPayload(res.payload);
+    } catch {
+      setScanError("Could not read that image. Try another screenshot.");
+    }
+  };
+
+  const handleDownload = async () => {
     if (!qrUrl) return;
+    let downloadHref = qrUrl;
+    try {
+      const img = new Image();
+      img.src = qrUrl;
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error("qr load failed"));
+      });
+      const canvas = document.createElement("canvas");
+      canvas.width = 720;
+      canvas.height = 920;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        const grad = ctx.createLinearGradient(0, 0, 720, 920);
+        grad.addColorStop(0, "#5B21B6");
+        grad.addColorStop(0.55, "#7C3AED");
+        grad.addColorStop(1, "#9333EA");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 720, 920);
+
+        // Diagonal "b" watermark pattern matching the live card
+        ctx.save();
+        ctx.translate(360, 460);
+        ctx.rotate((-22 * Math.PI) / 180);
+        ctx.fillStyle = "rgba(255,255,255,0.08)";
+        ctx.font = "700 44px system-ui, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        for (let y = -700; y <= 700; y += 96) {
+          for (let x = -700; x <= 700; x += 96) {
+            ctx.fillText("b", x, y);
+          }
+        }
+        ctx.restore();
+
+        ctx.fillStyle = "rgba(255,255,255,0.92)";
+        ctx.font = "700 34px system-ui, sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("buckme", 360, 88);
+
+        ctx.fillStyle = "rgba(255,255,255,0.75)";
+        ctx.font = "600 20px system-ui, sans-serif";
+        ctx.fillText("SCAN TO BUCK", 360, 126);
+
+        ctx.fillStyle = "#FFFFFF";
+        ctx.beginPath();
+        ctx.roundRect(140, 168, 440, 440, 32);
+        ctx.fill();
+        ctx.drawImage(img, 172, 200, 376, 376);
+
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "700 36px system-ui, sans-serif";
+        ctx.fillText(name.trim() || "BuckMe User", 360, 680);
+
+        ctx.fillStyle = "rgba(255,255,255,0.82)";
+        ctx.font = "500 24px system-ui, sans-serif";
+        ctx.fillText(vpa.trim(), 360, 722);
+
+        const parsedAmt = parseAmount(defaultAmount);
+        const subline = [
+          parsedAmt ? `₹${parsedAmt}` : "",
+          defaultNote.trim(),
+        ]
+          .filter(Boolean)
+          .join(" • ");
+        if (subline) {
+          ctx.fillStyle = "rgba(255,255,255,0.9)";
+          ctx.font = "600 24px system-ui, sans-serif";
+          ctx.fillText(subline, 360, 774);
+        }
+
+        downloadHref = canvas.toDataURL("image/png");
+      }
+    } catch {
+      /* fallback to raw qrUrl */
+    }
     const a = document.createElement("a");
-    a.href = qrUrl;
-    a.download = `buckme-qr-${name || "pay"}.png`;
+    a.href = downloadHref;
+    a.download = `buckme-qr-${(name || "pay").toLowerCase().replace(/\s+/g, "-")}.png`;
     a.click();
     void trackEvent("qr_shared");
   };
 
-  return (
-    <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/60 sm:items-center sm:p-4">
-      <div className="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-[#F8F7FC] p-5 shadow-2xl sm:rounded-3xl">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-extrabold text-[#5B21B6]">My BuckMe QR</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close My BuckMe QR"
-            className="cursor-pointer rounded-full p-1.5 text-gray-500 hover:bg-gray-200"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        {/* Setup fields */}
-        <div className="mt-3 space-y-2.5">
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-[11px] font-bold text-gray-600">Your UPI ID *</label>
-              <input
-                type="text"
-                value={vpa}
-                onChange={(e) => setVpa(e.target.value)}
-                onBlur={handleSave}
-                placeholder="you@okaxis"
-                className="mt-1 w-full rounded-xl border border-purple-200 bg-white px-3 py-2 text-xs font-semibold text-gray-900 outline-none focus:border-[#6D28D9]"
-              />
-            </div>
-            <div>
-              <label className="text-[11px] font-bold text-gray-600">Display Name</label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                onBlur={handleSave}
-                placeholder="Jason / Lucia"
-                className="mt-1 w-full rounded-xl border border-purple-200 bg-white px-3 py-2 text-xs font-semibold text-gray-900 outline-none focus:border-[#6D28D9]"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-[11px] font-bold text-gray-600">Default ₹ (opt)</label>
-              <input
-                type="number"
-                value={defaultAmount}
-                onChange={(e) => setDefaultAmount(e.target.value)}
-                onBlur={handleSave}
-                placeholder="Any amount"
-                className="mt-1 w-full rounded-xl border border-purple-200 bg-white px-3 py-2 text-xs font-semibold text-gray-900 outline-none focus:border-[#6D28D9]"
-              />
-            </div>
-            <div>
-              <label className="text-[11px] font-bold text-gray-600">Note (opt)</label>
-              <input
-                type="text"
-                value={defaultNote}
-                onChange={(e) => setDefaultNote(e.target.value)}
-                onBlur={handleSave}
-                placeholder="For Leonida bail"
-                className="mt-1 w-full rounded-xl border border-purple-200 bg-white px-3 py-2 text-xs font-semibold text-gray-900 outline-none focus:border-[#6D28D9]"
-              />
-            </div>
-          </div>
-          {vpaError && <p className="text-xs font-medium text-red-600">{vpaError}</p>}
-        </div>
-
-        {/* BuckMe QR Card */}
-        {qrUrl ? (
-          <div className="buckme-gradient buckme-pattern mt-4 flex flex-col items-center rounded-3xl p-5 text-white shadow-lg">
-            <div className="flex w-full items-center justify-between">
-              <span className="text-base font-extrabold">buckme</span>
-              <span className="rounded-full bg-white/15 px-2.5 py-0.5 text-[10px] font-bold">
-                SCAN TO BUCK
-              </span>
-            </div>
-            <div className="mt-3 rounded-2xl bg-white p-3 shadow-md">
-              <img src={qrUrl} alt="BuckMe QR Code" className="h-44 w-44" />
-            </div>
-            <p className="mt-3 text-sm font-extrabold">{name || "BuckMe User"}</p>
-            <p className="text-[11px] text-purple-200">{vpa}</p>
-            <p className="mt-1 text-[10px] text-purple-100/80">
-              Opens your BuckMe Pay page (not raw UPI)
-            </p>
-
-            <div className="mt-4 grid w-full grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => void handleCopy()}
-                className="flex cursor-pointer items-center justify-center gap-1 rounded-xl bg-white px-2 py-2 text-xs font-bold text-[#5B21B6]"
-              >
-                {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                <span>{copied ? "Copied" : "Copy"}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => void handleShare()}
-                className="flex cursor-pointer items-center justify-center gap-1 rounded-xl bg-white/20 px-2 py-2 text-xs font-bold text-white"
-              >
-                <Share2 className="h-3.5 w-3.5" />
-                <span>Share</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleDownload}
-                className="flex cursor-pointer items-center justify-center gap-1 rounded-xl bg-white/20 px-2 py-2 text-xs font-bold text-white"
-              >
-                <Download className="h-3.5 w-3.5" />
-                <span>Save</span>
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="mt-4 rounded-2xl border border-dashed border-purple-300 bg-white p-6 text-center text-xs text-gray-500">
-            Enter a valid UPI ID above (e.g. <code>yourname@okaxis</code>) to generate your BuckMe QR.
-          </div>
-        )}
-      </div>
+  const qrPreview = qrUrl ? (
+    <img src={qrUrl} alt="BuckMe QR Code" className="h-44 w-44" />
+  ) : (
+    <div className="flex h-44 w-44 items-center justify-center p-4 text-center text-xs text-gray-500">
+      Scan or upload your UPI QR above to generate your BuckMe card
     </div>
+  );
+
+  return (
+    <>
+      <MyQrSheetView
+        vpa={vpa}
+        name={name}
+        amount={defaultAmount}
+        note={defaultNote}
+        qrPreview={qrPreview}
+        copied={copied}
+        scanError={scanError}
+        onVpaChange={setVpa}
+        onNameChange={setName}
+        onAmountChange={setDefaultAmount}
+        onNoteChange={setDefaultNote}
+        onOpenScanner={() => setScannerOpen(true)}
+        onUploadQr={(file) => void handleUploadQr(file)}
+        onCopy={() => void handleCopy()}
+        onShare={() => void handleShare()}
+        onSave={() => void handleDownload()}
+        onClose={onClose}
+      />
+
+      {scannerOpen && (
+        <QrScannerSheet
+          onClose={() => setScannerOpen(false)}
+          onParsed={(payload) => {
+            applyParsedPayload(payload);
+            setScannerOpen(false);
+          }}
+        />
+      )}
+    </>
   );
 }

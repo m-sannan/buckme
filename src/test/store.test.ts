@@ -5,11 +5,11 @@ import { formatBySymbol, useBuckMeStore } from "../lib/store.ts";
 describe("BuckMe Zustand store", () => {
   it("flips home and checkout currency symbols", () => {
     const s = useBuckMeStore.getState();
-    assert.equal(s.homeCurrency, "$");
-    s.flipHomeCurrency();
-    assert.equal(useBuckMeStore.getState().homeCurrency, "₹");
+    assert.equal(s.homeCurrency, "₹");
     s.flipHomeCurrency();
     assert.equal(useBuckMeStore.getState().homeCurrency, "$");
+    s.flipHomeCurrency();
+    assert.equal(useBuckMeStore.getState().homeCurrency, "₹");
 
     assert.equal(formatBySymbol(1410, "$"), "$1,410");
     assert.equal(formatBySymbol(1410, "₹"), "₹1,410");
@@ -23,8 +23,8 @@ describe("BuckMe Zustand store", () => {
     assert.equal(useBuckMeStore.getState().familySavings, 500);
   });
 
-  it("logs pending transaction and deducts on confirmation", () => {
-    useBuckMeStore.setState({ checkingBalance: 1000, transactions: [] });
+  it("logs pending transaction and adds confirmed amount to Family Savings without deducting Checking", () => {
+    useBuckMeStore.setState({ checkingBalance: 1000, familySavings: 0, transactions: [] });
     const id = useBuckMeStore.getState().addPendingTx({
       vpa: "friend@okaxis",
       name: "Friend",
@@ -37,6 +37,7 @@ describe("BuckMe Zustand store", () => {
 
     useBuckMeStore.getState().resolveTx(id, "confirmed");
     assert.equal(useBuckMeStore.getState().transactions[0]?.status, "confirmed");
-    assert.equal(useBuckMeStore.getState().checkingBalance, 750);
+    assert.equal(useBuckMeStore.getState().checkingBalance, 1000);
+    assert.equal(useBuckMeStore.getState().familySavings, 250);
   });
 });

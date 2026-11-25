@@ -4,6 +4,8 @@ import { formatInrPretty } from "@/lib/upi";
 
 export function TransactionsView({ onBack }: { onBack: () => void }) {
   const { transactions, resolveTx, clearTransactions } = useBuckMeStore();
+  const confirmedTxs = transactions.filter((t) => t.status === "confirmed");
+  const confirmedTotal = confirmedTxs.reduce((sum, t) => sum + t.amount, 0);
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 py-5">
@@ -41,7 +43,22 @@ export function TransactionsView({ onBack }: { onBack: () => void }) {
           </p>
         </div>
       ) : (
-        <div className="space-y-2.5">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between rounded-2xl border border-purple-200/70 bg-white px-4 py-3 shadow-sm">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+                Total Bucked
+              </p>
+              <p className="text-xl font-extrabold tabular-nums text-[#5B21B6]">
+                ₹{formatInrPretty(confirmedTotal)}
+              </p>
+            </div>
+            <span className="rounded-full bg-[#F3E8FF] px-3 py-1 text-xs font-bold text-[#7C3AED]">
+              {confirmedTxs.length} confirmed
+            </span>
+          </div>
+
+          <div className="space-y-2.5">
           {transactions.map((tx) => (
             <div
               key={tx.id}
@@ -96,6 +113,7 @@ export function TransactionsView({ onBack }: { onBack: () => void }) {
               )}
             </div>
           ))}
+          </div>
         </div>
       )}
     </div>

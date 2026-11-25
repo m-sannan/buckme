@@ -1,82 +1,80 @@
-import { useState } from "react";
-import { ChevronDown, HelpCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import React, { useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 
-const BUCKME_FAQS = [
+interface FaqItem {
+  q: string;
+  a: string;
+}
+
+const FAQS: FaqItem[] = [
   {
-    q: "What is BuckMe?",
-    a: "BuckMe is a digital financial application provided in partnership with Fleeca Financial. It allows you to hold digital funds, track transactions, locate ATMs, and funnel money into Family Savings — now with real UPI powers.",
+    q: 'What is BuckMe UPI?',
+    a: 'BuckMe UPI lets you scan any Indian UPI QR code, paste a UPI ID (VPA), or share your own BuckMe payment link—wrapped in the GTA 6 BuckMe banking interface. It builds standard UPI links and hands off directly to your UPI app.',
   },
   {
-    q: "How do I pay someone?",
-    a: "Tap Scan & Pay, point your camera at any UPI QR (or paste a VPA like name@okhdfcbank), confirm the amount, pick your UPI app, and you're Bucking. BuckMe handles the handoff — your UPI app handles the PIN.",
+    q: 'How do I pay someone?',
+    a: 'Tap Scan & Pay to scan a QR with your camera, upload a QR screenshot, or paste a UPI ID / upi:// link. Enter the amount in INR, then pick CRED, another listed UPI app, or "Other UPI App" to open your phone’s UPI app drawer.',
   },
   {
-    q: 'What is "Buck Yourself"?',
-    a: '"Buck Yourself" is BuckMe\'s internal transfer protocol. It moves digital funds from your Checking Account into the shared Family Savings pool. Think of it as locking money away where even you can\'t blow it on another vehicle.',
+    q: 'What if my UPI app is not listed?',
+    a: 'Tap "Other UPI App (Open System Drawer)" below the app grid. That sends a standard upi://pay intent to your phone so you can pick any UPI app installed on your device.',
   },
   {
-    q: "Can I withdraw money from Family Savings?",
-    a: "No. Once money is transferred into Family Savings, it is locked away safely and cannot be withdrawn or spent. But hitting milestones unlocks perks and bragging rights.",
+    q: 'How does "My BuckMe QR" work?',
+    a: 'Enter your UPI ID (e.g. name@okaxis), display name, and optional default amount/note. BuckMe generates a shareable /pay web link and QR code so friends can open it in their browser and pay you with their preferred UPI app.',
   },
   {
-    q: "What's a BuckMe QR?",
-    a: "Instead of sharing a boring bank QR, BuckMe generates a branded QR that opens a BuckMe payment page. The person scanning it sees your name, amount, and one-tap UPI buttons — plus a CTA to get their own BuckMe QR.",
+    q: 'Does BuckMe hold my money or bank details?',
+    a: 'No. BuckMe never touches your bank account, never collects UPI PINs, and does not process payments. Your transaction history and profile are stored locally in your browser.',
   },
   {
-    q: "Why can't I deposit cash through the app?",
-    a: "Physical pocket cash must be deposited at a physical ATM. Digital app deposits cannot be made straight from your phone. That's just how Fleeca rolls.",
+    q: 'Why does Checking show $1,410?',
+    a: 'It is a cosmetic starter balance for the GTA 6 BuckMe look (not real money). You can tap the $ or ₹ symbol on the card to flip the display symbol for fun—your real UPI total lives in Family Savings below.',
   },
   {
-    q: "What are the account limits?",
-    a: "Standard purchases under $1,000 use pocket cash. Anything over $1,000 must go through your BuckMe Checking Account. Limits increase as you progress. In this app, there are no real limits — go wild.",
-  },
-  {
-    q: "What happens to my money if I get Wasted or Busted?",
-    a: "Pocket cash? Gone. But anything in your BuckMe Checking or Family Savings is safe. That's the whole point of banking with Fleeca. (In real life, your money is safe either way. Probably.)",
+    q: 'How does Family Savings work?',
+    a: 'Family Savings starts at ₹0 and tracks the real ₹ total you have sent through BuckMe. Whenever you launch a UPI app and confirm "Yes, Mark Paid", that amount is added automatically toward your next milestone (₹1K → ₹5K → ₹10K → ₹50K → ₹1L).',
   },
 ];
 
-export function FaqAccordion() {
-  const [openIndices, setOpenIndices] = useState<Record<number, boolean>>({});
+export const FaqAccordion: React.FC = () => {
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
 
-  const toggle = (idx: number) => {
-    setOpenIndices((prev) => ({ ...prev, [idx]: !prev[idx] }));
+  const toggle = (i: number) => {
+    setOpenIndex((prev) => (prev === i ? null : i));
   };
 
   return (
-    <section className="rounded-3xl border border-purple-200/70 bg-white p-4 shadow-sm">
-      <div className="mb-3 flex items-center gap-2">
-        <HelpCircle className="h-4 w-4 text-[#6D28D9]" />
-        <h2 className="text-sm font-extrabold tracking-tight text-[#5B21B6]">
-          BuckMe FAQ
-        </h2>
-        <span className="ml-auto text-[11px] font-medium text-gray-400">
+    <div className="rounded-3xl border border-[#E9D5FF] bg-white p-5 shadow-sm">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-[#5B21B6]">BuckMe FAQ</h2>
+        <span className="rounded-full bg-[#F3E8FF] px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-[#7C3AED]">
           Fleeca Support
         </span>
       </div>
 
-      <div className="divide-y divide-purple-100">
-        {BUCKME_FAQS.map((item, idx) => {
-          const isOpen = Boolean(openIndices[idx]);
+      <div className="divide-y divide-[#E9D5FF]">
+        {FAQS.map((item, i) => {
+          const isOpen = openIndex === i;
           return (
-            <div key={item.q} className="py-2.5 first:pt-1 last:pb-1">
+            <div key={item.q}>
               <button
                 type="button"
-                onClick={() => toggle(idx)}
+                onClick={() => toggle(i)}
+                className="flex min-h-[44px] w-full items-center justify-between gap-3 py-3 text-left"
                 aria-expanded={isOpen}
-                className="flex w-full cursor-pointer items-center justify-between gap-3 text-left text-xs font-bold text-gray-800 transition hover:text-[#5B21B6]"
               >
-                <span>{item.q}</span>
+                <span className="text-sm font-medium text-[#111111]">
+                  {item.q}
+                </span>
                 <ChevronDown
-                  className={cn(
-                    "h-4 w-4 shrink-0 text-[#6D28D9] transition-transform duration-200",
-                    isOpen && "rotate-180",
-                  )}
+                  className={`h-4 w-4 shrink-0 text-[#7C3AED] transition-transform ${
+                    isOpen ? 'rotate-180' : ''
+                  }`}
                 />
               </button>
               {isOpen && (
-                <p className="mt-2 rounded-xl bg-[#F8F7FC] p-2.5 text-xs leading-relaxed text-gray-600">
+                <p className="pb-3 text-sm leading-relaxed text-[#5B21B6]/80">
                   {item.a}
                 </p>
               )}
@@ -84,6 +82,8 @@ export function FaqAccordion() {
           );
         })}
       </div>
-    </section>
+    </div>
   );
-}
+};
+
+export default FaqAccordion;

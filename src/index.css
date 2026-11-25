@@ -17,8 +17,18 @@
 }
 
 .buckme-pattern {
-  background-image: url("data:image/svg+xml,%3Csvg width='44' height='44' viewBox='0 0 44 44' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='10' y='28' fill='rgba(255,255,255,0.065)' font-family='sans-serif' font-weight='900' font-size='22' transform='rotate(-18 22 22)'%3Eb%3C/text%3E%3C/svg%3E");
-  background-repeat: repeat;
+  background-image:
+    url("data:image/svg+xml,%3Csvg width='44' height='44' viewBox='0 0 44 44' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='10' y='28' fill='rgba(255,255,255,0.065)' font-family='sans-serif' font-weight='900' font-size='22' transform='rotate(-18 22 22)'%3Eb%3C/text%3E%3C/svg%3E"),
+    linear-gradient(135deg, #5B21B6 0%, #7C3AED 52%, #9333EA 100%);
+  background-repeat: repeat, no-repeat;
+}
+
+.buckme-gradient.buckme-pattern {
+  background-image:
+    url("data:image/svg+xml,%3Csvg width='44' height='44' viewBox='0 0 44 44' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='10' y='28' fill='rgba(255,255,255,0.065)' font-family='sans-serif' font-weight='900' font-size='22' transform='rotate(-18 22 22)'%3Eb%3C/text%3E%3C/svg%3E"),
+    linear-gradient(135deg, #5B21B6 0%, #7C3AED 52%, #9333EA 100%);
+  background-repeat: repeat, no-repeat;
+  background-size: 44px 44px, 100% 100%;
 }
 
 @keyframes bm-fade-out {

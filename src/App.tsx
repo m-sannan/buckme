@@ -1,17 +1,19 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Analytics } from "@vercel/analytics/react";
 import { BarChart3, History } from "lucide-react";
-import { trackEvent } from "@/lib/stats";
+import { fetchStats, trackEvent, type StatsSnapshot } from "@/lib/stats";
 import { useBuckMeStore } from "@/lib/store";
 import type { UpiPayload } from "@/lib/upi";
-import { BuckMeLogo, DualAvatars, SplashOverlay } from "./components/BuckMeBrand";
+import { BuckMeLogo } from "./components/BuckMeLogo";
 import { CheckingCard } from "./components/CheckingCard";
 import { CheckoutSheet } from "./components/CheckoutSheet";
+import { DualAvatars } from "./components/DualAvatars";
 import { FamilySavingsCard } from "./components/FamilySavingsCard";
 import { FaqAccordion } from "./components/FaqAccordion";
 import { MyQrSheet } from "./components/MyQrSheet";
 import { PayPage } from "./components/PayPage";
 import { QrScannerSheet } from "./components/QrScannerSheet";
+import { SplashOverlay } from "./components/SplashOverlay";
 import { StatsView } from "./components/StatsView";
 import { TransactionsView } from "./components/TransactionsView";
 
@@ -31,16 +33,27 @@ export function App() {
   const [scanOpen, setScanOpen] = useState(false);
   const [myQrOpen, setMyQrOpen] = useState(false);
   const [checkoutPayload, setCheckoutPayload] = useState<UpiPayload | null>(null);
+  const [stats, setStats] = useState<StatsSnapshot | null>(null);
 
   const {
     checkingBalance,
     familySavings,
-    familyGoal,
     homeCurrency,
     flipHomeCurrency,
-    buckYourself,
+    setCheckingBalance,
     transactions,
   } = useBuckMeStore();
+
+  const confirmedTxs = transactions.filter((t) => t.status === "confirmed");
+
+  const refreshStats = useCallback(async () => {
+    try {
+      const data = await fetchStats();
+      setStats(data);
+    } catch {
+      /* ignore local/offline error */
+    }
+  }, []);
 
   useEffect(() => {
     const onPop = () => setRoute(resolveRoute());
@@ -50,11 +63,14 @@ export function App() {
 
   useEffect(() => {
     if (route === "/") {
-      void trackEvent("landing");
+      void trackEvent("landing").then((snap) => {
+        if (snap) setStats(snap);
+        else void refreshStats();
+      });
       const t = setTimeout(() => setShowSplash(false), 1250);
       return () => clearTimeout(t);
     }
-  }, [route]);
+  }, [route, refreshStats]);
 
   const navigate = (next: RoutePath) => {
     if (window.location.pathname !== next) {
@@ -95,10 +111,10 @@ export function App() {
     <>
       {showSplash && <SplashOverlay onSkip={() => setShowSplash(false)} />}
 
-      <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 py-5 pb-10">
+      <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col bg-[#F8F7FC] px-4 py-5 pb-10">
         {/* Top Bar matching GTA 6 BuckMe */}
         <header className="flex items-center justify-between pb-4">
-          <BuckMeLogo className="h-8 w-8" />
+          <BuckMeLogo className="h-8 w-8" color="#5B21B6" />
           <DualAvatars />
         </header>
 
@@ -107,16 +123,17 @@ export function App() {
             balance={checkingBalance}
             currency={homeCurrency}
             onFlipCurrency={flipHomeCurrency}
+            onUpdateBalance={setCheckingBalance}
             onOpenScan={() => setScanOpen(true)}
             onOpenMyQr={() => setMyQrOpen(true)}
           />
 
           <FamilySavingsCard
-            savings={familySavings}
-            goal={familyGoal}
+            familySavings={familySavings}
             currency={homeCurrency}
-            onFlipCurrency={flipHomeCurrency}
-            onBuckYourself={buckYourself}
+            peopleBucked={stats?.totalBucked ?? 0}
+            confirmedTxs={confirmedTxs}
+            onScanAndPay={() => setScanOpen(true)}
             onViewTransactions={() => navigate("/transactions")}
           />
 
@@ -148,7 +165,7 @@ export function App() {
                   Live Stats
                 </p>
                 <p className="mt-0.5 text-[11px] text-gray-500">
-                  X virality card
+                  Community pulse
                 </p>
               </div>
               <BarChart3 className="h-5 w-5 text-[#6D28D9]" />
@@ -173,7 +190,10 @@ export function App() {
       {checkoutPayload && (
         <CheckoutSheet
           payload={checkoutPayload}
-          onClose={() => setCheckoutPayload(null)}
+          onClose={() => {
+            setCheckoutPayload(null);
+            void refreshStats();
+          }}
         />
       )}
 

@@ -55,9 +55,9 @@ export const useBuckMeStore = create<BuckMeState>()(
   persist(
     (set, get) => ({
       checkingBalance: 1410,
-      familySavings: 100,
+      familySavings: 0,
       familyGoal: 5000,
-      homeCurrency: "$",
+      homeCurrency: "₹",
       checkoutCurrency: "₹",
       profile: {
         vpa: "",
@@ -94,15 +94,15 @@ export const useBuckMeStore = create<BuckMeState>()(
       resolveTx: (id, status) =>
         set((s) => {
           const target = s.transactions.find((t) => t.id === id);
-          const shouldDeduct =
+          const shouldAdd =
             status === "confirmed" && target && target.status !== "confirmed";
           return {
             transactions: s.transactions.map((t) =>
               t.id === id ? { ...t, status } : t,
             ),
-            checkingBalance: shouldDeduct
-              ? Math.max(0, Math.round((s.checkingBalance - target.amount) * 100) / 100)
-              : s.checkingBalance,
+            familySavings: shouldAdd
+              ? Math.round((s.familySavings + target.amount) * 100) / 100
+              : s.familySavings,
             activePendingId: s.activePendingId === id ? null : s.activePendingId,
           };
         }),
@@ -124,6 +124,20 @@ export const useBuckMeStore = create<BuckMeState>()(
     }),
     {
       name: "buckme-upi-storage-v1",
+      version: 3,
+      migrate: (persisted) => {
+        const state = (persisted ?? {}) as Partial<BuckMeState>;
+        const txs = Array.isArray(state.transactions) ? state.transactions : [];
+        const confirmedTotal = txs
+          .filter((t) => t.status === "confirmed")
+          .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+        return {
+          ...state,
+          checkingBalance: 1410,
+          homeCurrency: "₹",
+          familySavings: Math.round(confirmedTotal * 100) / 100,
+        };
+      },
     },
   ),
 );
