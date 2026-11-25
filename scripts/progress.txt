@@ -1,0 +1,7 @@
+# BuckMe UPI — Ralph Progress Log
+- [x] US-01: Ported otherspe UPI parser, app launcher, and QR decoder (`src/lib/upi.ts`, `upi-apps.ts`, `decode-qr.ts`).
+- [x] US-02: Built BuckMe Home, Checking Card, Family Savings ("Buck Yourself"), Tap-to-Switch Currency, and 8-question FAQ accordion.
+- [x] US-03: Built Scan & Pay, BuckMe Checkout, optimistic return logger, and `/transactions`.
+- [x] US-04: Built My BuckMe QR (`/pay?...` encoder) and viral `/pay` recipient page.
+- [x] US-05: Built `/api/stats` (Upstash + memory fallback), `/stats` virality card, and `@vercel/analytics`.
+- [x] US-06: Running Verification Harness + writing `HANDOFF.md`.

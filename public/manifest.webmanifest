@@ -1,0 +1,17 @@
+{
+  "name": "buckme",
+  "short_name": "buckme",
+  "description": "Thank you for bucking with us — GTA 6 BuckMe skinned UPI scanner & QR sharer",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#5B21B6",
+  "theme_color": "#6124A8",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

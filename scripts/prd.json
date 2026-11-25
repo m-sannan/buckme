@@ -1,0 +1,67 @@
+{
+  "project": "buckme-upi",
+  "branchName": "main",
+  "description": "GTA 6 BuckMe-skinned UPI scanner, transaction logger, viral BuckMe QR sharer, and X-ready virality analytics",
+  "userStories": [
+    {
+      "id": "US-01",
+      "title": "Port otherspe UPI parser, app launcher, and QR decoder",
+      "acceptanceCriteria": [
+        "src/lib/upi.ts parses VPA, upi://pay, Bharat QR, and builds upi://pay URIs",
+        "src/lib/upi-apps.ts supports CRED + 9 UPI apps with Android intent:// and iOS schemes",
+        "src/lib/decode-qr.ts decodes QR from ImageData/Blob and generates QR data URLs",
+        "Unit tests pass"
+      ],
+      "passes": true
+    },
+    {
+      "id": "US-02",
+      "title": "BuckMe Home Dashboard, Family Savings, Tap-to-Switch Currency & 8 FAQs",
+      "acceptanceCriteria": [
+        "Light-mode lavender/white canvas with royal purple gradient Checking Account card",
+        "Tap on $ / ₹ symbol flips currency on the spot",
+        "Family Savings card with bruised b mascot, Buck Yourself modal, and View Transactions",
+        "Collapsible 8-question BuckMe FAQ accordion at bottom of Home"
+      ],
+      "passes": true
+    },
+    {
+      "id": "US-03",
+      "title": "Scan & Pay, BuckMe Checkout, and Return Confirmation Logger",
+      "acceptanceCriteria": [
+        "Camera scanner + Upload QR + Paste VPA/URI + Try Sample QR",
+        "UPI app launch logs pending transaction and prompts Did the Buck clear? on return",
+        "Transactions view (/transactions) displays Confirmed, Pending, and Cancelled entries"
+      ],
+      "passes": true
+    },
+    {
+      "id": "US-04",
+      "title": "My BuckMe QR Generator and Viral /pay Recipient Page",
+      "acceptanceCriteria": [
+        "My BuckMe QR encodes /pay?pa=... URL (not raw upi://) with Copy, Share, and Download PNG",
+        "Recipient /pay page renders You're Bucking [Name], UPI app buttons, and Get your own BuckMe QR CTA"
+      ],
+      "passes": true
+    },
+    {
+      "id": "US-05",
+      "title": "Free Virality Analytics (/api/stats, /stats, Vercel Analytics)",
+      "acceptanceCriteria": [
+        "api/stats.ts supports Upstash Redis when env vars are set and falls back to memory locally",
+        "/stats renders X-screenshot-ready Total Landings, People Bucked, QRs Shared, and Buck Rate"
+      ],
+      "passes": true
+    },
+    {
+      "id": "US-06",
+      "title": "Verification Harness & Mandatory AI Handoff Document",
+      "acceptanceCriteria": [
+        "tsc --noEmit, unit tests, and Vite build pass",
+        "Playwright mobile smoke test (390x844) passes",
+        "HANDOFF.md created with architecture, verification results, and v2 backlog"
+      ],
+      "passes": true
+    }
+  ]
+}
