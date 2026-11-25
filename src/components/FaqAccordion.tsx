@@ -9,31 +9,31 @@ interface FaqItem {
 const FAQS: FaqItem[] = [
   {
     q: 'What is BuckMe UPI?',
-    a: 'BuckMe UPI lets you scan any Indian UPI QR code, paste a UPI ID (VPA), or share your own BuckMe payment link—wrapped in the GTA 6 BuckMe banking interface. It builds standard UPI links and hands off directly to your UPI app.',
+    a: 'When traditional banks turned you down for "questionable Leonida credit history," BuckMe stepped up. It’s a GTA 6 BuckMe-skinned UPI scanner and payment link sharer—scan any QR, send a link, and let your UPI app handle the rest. Thank you for bucking with us!',
   },
   {
-    q: 'How do I pay someone?',
-    a: 'Tap Scan & Pay to scan a QR with your camera, upload a QR screenshot, or paste a UPI ID / upi:// link. Enter the amount in INR, then pick CRED, another listed UPI app, or "Other UPI App" to open your phone’s UPI app drawer.',
+    q: 'Wait… why does it say "You’re Bucking"?',
+    a: 'Because Fleeca’s compliance team somehow approved it. Every time you pay someone—or get paid through your link—somebody officially gets Bucked. Hear the jingle in your head yet? "Thank you for bucking with us!"',
   },
   {
-    q: 'What if my UPI app is not listed?',
-    a: 'Tap "Other UPI App (Open System Drawer)" below the app grid. That sends a standard upi://pay intent to your phone so you can pick any UPI app installed on your device.',
+    q: 'How do I actually Buck someone?',
+    a: 'Tap Scan & Pay to use your camera, upload a QR screenshot, or paste a UPI ID / upi:// link. Enter the amount in ₹, then pick CRED, GPay, PhonePe, Paytm, or "Other UPI App" to jump straight into your phone’s UPI drawer.',
   },
   {
     q: 'How does "My BuckMe QR" work?',
-    a: 'Enter your UPI ID (e.g. name@okaxis), display name, and optional default amount/note. BuckMe generates a shareable /pay web link and QR code so friends can open it in their browser and pay you with their preferred UPI app.',
+    a: 'Scan your existing UPI QR (or type your UPI ID) to mint a shareable BuckMe card and /pay link. Send it to friends so they can Buck you back in two taps—zero excuses about "not having change."',
   },
   {
-    q: 'Does BuckMe hold my money or bank details?',
-    a: 'No. BuckMe never touches your bank account, never collects UPI PINs, and does not process payments. Your transaction history and profile are stored locally in your browser.',
-  },
-  {
-    q: 'Why does Checking show $1,410?',
-    a: 'It is a cosmetic starter balance for the GTA 6 BuckMe look (not real money). You can tap the $ or ₹ symbol on the card to flip the display symbol for fun—your real UPI total lives in Family Savings below.',
+    q: 'Why can I edit my Checking balance?',
+    a: 'Because pocket cash disappears real fast if you get Wasted outside a Vice City club. Tap the balance to set whatever number helps you sleep at night, or tap $ / ₹ to flip currencies—it’s purely cosmetic. Your real ₹ total lives in Family Savings.',
   },
   {
     q: 'How does Family Savings work?',
-    a: 'Family Savings starts at ₹0 and tracks the real ₹ total you have sent through BuckMe. Whenever you launch a UPI app and confirm "Yes, Mark Paid", that amount is added automatically toward your next milestone (₹1K → ₹5K → ₹10K → ₹50K → ₹1L).',
+    a: 'Whenever you complete a UPI handoff and tap "Yes, Mark Paid," that ₹ amount stacks into Family Savings toward your next milestone (₹1K → ₹5K → ₹10K → ₹50K → ₹1L). Safer than stuffing cash under a motel mattress.',
+  },
+  {
+    q: 'Does BuckMe hold my money or UPI PIN?',
+    a: 'Never. Even Fleeca isn’t shady enough to ask for your PIN. BuckMe only builds standard upi://pay links and hands off to your UPI app—your profile and transaction log stay locally in your browser.',
   },
 ];
 
